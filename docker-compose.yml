@@ -2,15 +2,57 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:13
+    image: postgres:15-alpine
+    container_name: contract_intelligence_db
     environment:
-      - POSTGRES_DB=contract_intelligence
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      POSTGRES_DB: ${POSTGRES_DB:-contract_intelligence}
+      POSTGRES_USER: ${POSTGRES_USER:-contract_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-contract_password}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - contract_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-contract_user} -d ${POSTGRES_DB:-contract_intelligence}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: contract_intelligence_app
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-contract_user}:${POSTGRES_PASSWORD:-contract_password}@db:5432/${POSTGRES_DB:-contract_intelligence}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./vector_store:/app/vector_store
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - contract_network
+    restart: unless-stopped
+    user: root
+    command: sh -c "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
 
 volumes:
   postgres_data:
+    driver: local
+
+networks:
+  contract_network:
+    driver: bridge

@@ -1,18 +1,9 @@
-# src/utils/pdf_utils.py
-import PyPDF2
-from typing import Dict
+import fitz  # PyMuPDF
 
-def extract_pdf_text(file_path: str) -> Dict:
-    """
-    Extracts text and metadata (page count) from PDF.
-    """
+def extract_text_from_pdf(file_path: str) -> str:
+    """Extract text from a PDF file."""
     text = ""
-    with open(file_path, "rb") as f:
-        reader = PyPDF2.PdfReader(f)
-        for page in reader.pages:
-            text += page.extract_text() or ""
-
-        metadata = {
-            "num_pages": len(reader.pages),
-        }
-    return {"text": text, "metadata": metadata}
+    with fitz.open(file_path) as pdf:
+        for page in pdf:
+            text += page.get_text()
+    return text.strip()

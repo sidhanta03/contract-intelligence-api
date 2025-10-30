@@ -205,3 +205,42 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific files
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+contracts.db
+
+# Uploaded files (keep directory structure)
+uploads/*
+!uploads/.gitkeep
+
+# Vector store data
+vector_store/*
+!vector_store/.gitkeep
+
+# Alembic migration cache
+alembic/versions/__pycache__/
+
+# Docker volumes
+postgres_data/
+
+# IDE specific
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
